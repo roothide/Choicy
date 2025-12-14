@@ -1,5 +1,7 @@
 ifeq ($(THEOS_PACKAGE_SCHEME),rootless)
 TARGET = iphone:clang:16.5:15.0
+else ifeq ($(THEOS_PACKAGE_SCHEME),roothide)
+export TARGET = iphone:clang:16.5:15.0
 else
 TARGET = iphone:clang:13.7:8.0
 endif

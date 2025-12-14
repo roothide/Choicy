@@ -26,7 +26,7 @@
 #include <libgen.h>
 #include <os/log.h>
 #include <dlfcn.h>
-#include <libroot.h>
+#include <roothide.h>
 #include <mach-o/dyld.h>
 #include <mach-o/getsect.h>
 #include <ptrauth.h>
@@ -40,7 +40,7 @@ void *dlopen_hook(const char *path, int mode);
 void *(*dyld_dlopen_orig)(const void *, const char*, int);
 void *dyld_dlopen_hook(const void *dyld, const char *path, int mode);
 
-bool gShouldLog = true;
+bool gShouldLog = false;
 #define os_log_dbg(args ...) if (gShouldLog) os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_DEBUG, args)
 #define os_log_err(args ...) if (gShouldLog) os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_ERROR, args)
 
@@ -48,7 +48,7 @@ extern xpc_object_t xpc_create_from_plist(const void *buf, size_t len);
 #define kEnvDeniedTweaksOverride "CHOICY_DENIED_TWEAKS_OVERRIDE"
 #define kEnvAllowedTweaksOverride "CHOICY_ALLOWED_TWEAKS_OVERRIDE"
 #define kEnvOverwriteGlobalConfigurationOverride "CHOICY_OVERWRITE_GLOBAL_TWEAK_CONFIGURATION_OVERRIDE"
-#define kChoicyPrefsPlistPath JBROOT_PATH("/var/mobile/Library/Preferences/com.opa334.choicyprefs.plist")
+#define kChoicyPrefsPlistPath jbroot("/var/mobile/Library/Preferences/com.opa334.choicyprefs.plist")
 #define kChoicyPrefsKeyGlobalDeniedTweaks "globalDeniedTweaks"
 #define kChoicyPrefsKeyAppSettings "appSettings"
 #define kChoicyPrefsKeyDaemonSettings "daemonSettings"
@@ -407,6 +407,10 @@ bool dylib_is_tweak(const char *dylibPath)
 
 bool should_load_dylib(const char *dylibPath)
 {
+	if(gTweakInjectionDisabled && string_has_suffix(dylibPath, "/usr/lib/ellekit/OldABI.dylib")) {
+		return false;
+	}
+
 	if (!string_has_suffix(dylibPath, ".dylib")) return true;
 
 	char *dylibNameHeap = path_copy_basename(dylibPath);
@@ -495,12 +499,12 @@ void *dyld_dlopen_from_hook(const void *dyld, const char *path, int mode, void *
 const struct mach_header *find_tweak_loader_mach_header(const char **pathOut)
 {
 	const char *tweakLoaderPaths[] = {
-		JBROOT_PATH("/usr/lib/TweakLoader.dylib"),													 // Ellekit (Rootless Standard)
-		JBROOT_PATH("/usr/lib/substitute-loader.dylib"),											 // Substitute
-		JBROOT_PATH("/usr/lib/TweakInject.dylib"),													 // libhooker
-		JBROOT_PATH("/usr/lib/substrate/SubstrateLoader.dylib"),									 // Substrate
-		JBROOT_PATH("/Library/Frameworks/CydiaSubstrate.framework/Libraries/SubstrateLoader.dylib"), // Substrate (Older versions)
-		JBROOT_PATH("/usr/lib/Sonar/libsonar.dylib"),												 // Sonar
+		jbroot("/usr/lib/TweakLoader.dylib"),													 // Ellekit (Rootless Standard)
+		jbroot("/usr/lib/substitute-loader.dylib"),											 // Substitute
+		jbroot("/usr/lib/TweakInject.dylib"),													 // libhooker
+		jbroot("/usr/lib/substrate/SubstrateLoader.dylib"),									 // Substrate
+		jbroot("/Library/Frameworks/CydiaSubstrate.framework/Libraries/SubstrateLoader.dylib"), // Substrate (Older versions)
+		jbroot("/usr/lib/Sonar/libsonar.dylib"),												 // Sonar
 	};
 
 	bool foundTweakLoader = false;
@@ -539,6 +543,12 @@ int dyld_hook_routine(void **dyld, int idx, void *hook, void **orig, uint16_t pa
 	if (!dyldFuncPtrs) return -1;
 
 	if (vm_protect(mach_task_self_, (mach_vm_address_t)&dyldFuncPtrs[idx], sizeof(void *), false, VM_PROT_READ | VM_PROT_WRITE) == 0) {
+	// on some devices vm_protect may fail due to (os/kern) protection failure in dsc::__DATA_CONST:__const when using in cache dyld
+	} else if (vm_protect(mach_task_self_, (mach_vm_address_t)&dyldFuncPtrs[idx], sizeof(void *), false, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY) == 0) {
+	} else {
+		abort();
+	}
+	{
 		uint64_t location = (uint64_t)&dyldFuncPtrs[idx];
 		__unused uint64_t pacDiversifier = (location & ~(0xFFFFull << 48)) | ((uint64_t)pacSalt << 48);
 

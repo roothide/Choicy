@@ -24,7 +24,7 @@
 #import "CHPTweakList.h"
 #import "../Shared.h"
 #import "../HBLogWeak.h"
-#import <libroot.h>
+#import <roothide.h>
 
 #import <dirent.h>
 
@@ -77,8 +77,11 @@
 
 	[daemonPlists addObjectsFromArray:[[NSFileManager defaultManager] contentsOfDirectoryAtURL:[NSURL fileURLWithPath:@"/Library/LaunchDaemons"] includingPropertiesForKeys:nil options:0 error:nil]];
 
-	if ([[NSFileManager defaultManager] fileExistsAtPath:@"/var/jb/Library/LaunchDaemons"]) {
-		[daemonPlists addObjectsFromArray:[[NSFileManager defaultManager] contentsOfDirectoryAtURL:[NSURL fileURLWithPath:@"/var/jb/Library/LaunchDaemons"] includingPropertiesForKeys:nil options:0 error:nil]];
+	// if ([[NSFileManager defaultManager] fileExistsAtPath:@"/var/jb/Library/LaunchDaemons"]) {
+	// 	[daemonPlists addObjectsFromArray:[[NSFileManager defaultManager] contentsOfDirectoryAtURL:[NSURL fileURLWithPath:@"/var/jb/Library/LaunchDaemons"] includingPropertiesForKeys:nil options:0 error:nil]];
+	// }
+	if (![jbroot(@"/") isEqualToString:@"/"] && [[NSFileManager defaultManager] fileExistsAtPath:jbroot(@"/Library/LaunchDaemons")]) {
+		[daemonPlists addObjectsFromArray:[[NSFileManager defaultManager] contentsOfDirectoryAtURL:[NSURL fileURLWithPath:jbroot(@"/Library/LaunchDaemons")] includingPropertiesForKeys:nil options:0 error:nil]];
 	}
 
 	for (NSURL *daemonPlistURL in [daemonPlists reverseObjectEnumerator]) {

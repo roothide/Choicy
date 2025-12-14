@@ -21,7 +21,7 @@
 #import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
 #import <HBLog.h>
-#import <libroot.h>
+#import <roothide.h>
 
 extern NSBundle *CHBundle;
 extern NSString *localize(NSString *key);
@@ -31,7 +31,7 @@ extern NSDictionary *processPreferencesForDaemon(NSDictionary *preferences, NSSt
 extern BOOL parseNumberBool(id number, BOOL default_);
 extern NSInteger parseNumberInteger(id number, NSInteger default_);
 
-#define kChoicyPrefsPlistPath JBROOT_PATH(@"/var/mobile/Library/Preferences/com.opa334.choicyprefs.plist")
+#define kChoicyPrefsPlistPath jbroot(@"/var/mobile/Library/Preferences/com.opa334.choicyprefs.plist")
 #define kChoicyDylibName @"   Choicy"
 
 #define kChoicyPrefsKeyGlobalDeniedTweaks @"globalDeniedTweaks"

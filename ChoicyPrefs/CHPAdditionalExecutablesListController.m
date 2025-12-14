@@ -69,7 +69,7 @@
 	UIAlertController *executableAlert = [UIAlertController alertControllerWithTitle:localize(@"SELECT_EXECUTABLE") message:localize(@"SELECT_EXECUTABLE_MESSAGE") preferredStyle:UIAlertControllerStyleAlert];
 
 	[executableAlert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-		textField.placeholder = localize(@"PATH");
+		textField.placeholder = [NSString stringWithFormat:@"%@ (%@)",localize(@"PATH"),localize(@"Path based on jbroot")];
 		if (@available(iOS 13, *)) {
 			textField.textColor = [UIColor labelColor];
 		}
@@ -106,25 +106,26 @@
 {
 	if ([_additionalExecutables containsObject:executablePath]) return;
 
-	if (![[NSFileManager defaultManager] fileExistsAtPath:executablePath]) {
+	if (![[NSFileManager defaultManager] fileExistsAtPath:jbroot(executablePath)]) {
 		[self showErrorMessage:localize(@"ERROR_FILE_NOT_FOUND")];
 		return;
 	}
 
-	if ([CHPMachoParser isMachoAtPath:executablePath]) {
+	if ([CHPMachoParser isMachoAtPath:jbroot(executablePath)]) {
 		[self showErrorMessage:localize(@"ERROR_FILE_NO_EXECUTABLE")];
 		return;
 	}
 
-	if (![[CHPTweakList sharedInstance] oneOrMoreTweaksInjectIntoExecutableAtPath:executablePath]) {
-		[self showErrorMessage:localize(@"ERROR_NO_TWEAKS_INJECT")];
-		return;
-	}
+	// if we just want to disable tweak for the process
+	// if (![[CHPTweakList sharedInstance] oneOrMoreTweaksInjectIntoExecutableAtPath:executablePath]) {
+	// 	[self showErrorMessage:localize(@"ERROR_NO_TWEAKS_INJECT")];
+	// 	return;
+	// }
 
 	[_additionalExecutables addObject:executablePath];
 	[self saveAdditionalExecutables];
 
-	PSSpecifier *specifierToInsert = [CHPListController createSpecifierForExecutable:executablePath named:executablePath];
+	PSSpecifier *specifierToInsert = [CHPListController createSpecifierForExecutable:jbroot(executablePath) named:executablePath];
 	[self insertSpecifier:specifierToInsert atEndOfGroup:0 animated:YES];
 }
 
@@ -138,8 +139,15 @@
 	BOOL orig = [super performDeletionActionForSpecifier:specifier];
 
 	NSString *executablePath = [specifier propertyForKey:@"executablePath"];
-	[_additionalExecutables removeObject:executablePath];
+	[_additionalExecutables removeObject:rootfs(executablePath)];
 	[self saveAdditionalExecutables];
+
+	//temp fix: also remove binary configuration from "daemonSettings"
+	NSLog(@"Removing process configuration for additional executable: %@ : %@", executablePath, rootfs(executablePath));
+	void choicy_reloadPreferences();choicy_reloadPreferences();
+	NSMutableDictionary *mutablePrefs = preferencesForWriting();
+	[mutablePrefs[kChoicyPrefsKeyDaemonSettings] removeObjectForKey:executablePath.lastPathComponent];
+	writePreferences(mutablePrefs);
 
 	return orig;
 }
@@ -157,7 +165,7 @@
 		[_specifiers addObject:groupSpecifier];
 
 		[_additionalExecutables enumerateObjectsUsingBlock:^(NSString *executablePath, NSUInteger idx, BOOL *stop) {
-			[_specifiers addObject:[CHPListController createSpecifierForExecutable:executablePath named:executablePath]];
+			[_specifiers addObject:[CHPListController createSpecifierForExecutable:jbroot(executablePath) named:executablePath]];
 		}];
 	}
 

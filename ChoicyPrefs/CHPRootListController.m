@@ -25,7 +25,7 @@
 #import <mach-o/dyld.h>
 #import "CHPPreferences.h"
 #import "../ChoicyPrefsMigrator.h"
-#import <libroot.h>
+#import <roothide.h>
 
 NSArray *dylibsBeforeChoicy;
 
@@ -303,10 +303,10 @@ void determineLoadingOrder()
 	}
 
 	if (dylibsBeforeChoicy && isSubstrate) {
-		NSDictionary *targetLoaderAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:JBROOT_PATH_NSSTRING(@"/usr/lib/substrate/SubstrateLoader.dylib") error:nil];
+		NSDictionary *targetLoaderAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:jbroot(@"/usr/lib/substrate/SubstrateLoader.dylib") error:nil];
 
 		if ([[targetLoaderAttributes objectForKey:NSFileType] isEqualToString:NSFileTypeSymbolicLink]) {
-			NSString *destination = [[NSFileManager defaultManager] destinationOfSymbolicLinkAtPath:JBROOT_PATH_NSSTRING(@"/usr/lib/substrate/SubstrateLoader.dylib") error:nil];
+			NSString *destination = [[NSFileManager defaultManager] destinationOfSymbolicLinkAtPath:jbroot(@"/usr/lib/substrate/SubstrateLoader.dylib") error:nil];
 			if ([destination hasPrefix:@"/usr/lib/ChoicyLoader.dylib"]) {
 				// If ChoicyLoader is installed on Substrate, Choicy always loads first
 				dylibsBeforeChoicy = nil;

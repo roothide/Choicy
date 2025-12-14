@@ -23,7 +23,7 @@
 #import "SpringBoard.h"
 #import "ChoicyOverrideManager.h"
 #import <UIKit/UIKit.h>
-#import <libroot.h>
+#import <roothide.h>
 #import "ChoicySB.h"
 
 NSBundle *CHBundle;
@@ -249,7 +249,7 @@ void choicy_initSpringBoard(void)
 {
 	%init();
 
-	CHBundle = [NSBundle bundleWithPath:JBROOT_PATH_NSSTRING(@"/Library/Application Support/Choicy.bundle")];
+	CHBundle = [NSBundle bundleWithPath:jbroot(@"/Library/Application Support/Choicy.bundle")];
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, respring, CFSTR("com.opa334.choicy/respring"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 
 	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_13_0) {
