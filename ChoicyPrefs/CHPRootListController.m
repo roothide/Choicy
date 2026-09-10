@@ -313,6 +313,10 @@ void determineLoadingOrder()
 			}
 		}
 	}
+
+	if(access(jbroot("/usr/lib/ellekit/libinjector.dylib"), F_OK)==0) {
+		dylibsBeforeChoicy = nil;
+	}
 }
 
 __attribute__((constructor))
